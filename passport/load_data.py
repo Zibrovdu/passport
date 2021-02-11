@@ -3,18 +3,20 @@ from datetime import date, timedelta
 
 import pandas as pd
 from sqlalchemy import create_engine
-import load_cfg as lc
+import passport.load_cfg as lc
 
 engine = create_engine(f'{lc.db_dialect}://{lc.db_username}:{lc.db_password}@{lc.db_host}:{lc.db_port}/{lc.db_name}')
+
+print(engine)
 
 current_month = date.today().month
 current_day = date.today().day
 current_year = date.today().year
 current_week = date.today().isocalendar()[1]
 
-end_day = (date.today() + timedelta(days=7)).day
-end_month = (date.today() + timedelta(days=7)).month
-end_year = (date.today() + timedelta(days=7)).year
+end_day = (date.today() - timedelta(days=7)).day
+end_month = (date.today() - timedelta(days=7)).month
+end_year = (date.today() - timedelta(days=7)).year
 
 
 def LoadEtspData():
@@ -65,8 +67,8 @@ def NoIncidents():
 
 
 def GetTimeData(df):
-    delta_4h, delta_8h, delta_24h, delta_5d = timedelta(hours=4), timedelta(hours=8), timedelta(hours=24), timedelta(
-        days=5)
+    delta_4h, delta_8h, delta_24h, delta_5d = timedelta(hours=4), timedelta(hours=8), timedelta(hours=24), \
+                                              timedelta(days=5)
 
     time_dict = {'до 4-х часов': df[df['timedelta'] <= delta_4h].count_task.sum(),
                  'от 4-х до 8-ми часов': df[(df.timedelta <= delta_8h) & (df.timedelta > delta_4h)].count_task.sum(),
@@ -178,8 +180,6 @@ def GetIntent(df):
             mask = temp_df['text'].str.contains(i)
             temp_df.loc[mask, 'intent'] = item
 
-    # total_df = pd.DataFrame(columns=['num', 'text', 'intent'])
-
     df3 = temp_df[temp_df.loc[:, 'intent'] == '1С ЭБ']
     mask = df3['text'].str.contains('работает')
     df3.loc[mask, 'intent'] = 'не работает (1С ЭБ)'
@@ -282,15 +282,7 @@ def CountMeanTime(filtered_df):
 
 
 def LoadInfSystemsData():
-    # df = pd.read_excel('data.xlsx', sheet_name='Работа в ИС', usecols='A,D:O')
-    # df.dropna(axis=0, inplace=True)
-    # df['Unnamed: 0'] = df['Unnamed: 0'].astype(int)
-    # df = df.T
-    # new_header = df.iloc[0]  # grab the first row for the header
-    # df = df[1:]  # take the data less the header row
-    # df.columns = new_header  # set the header row as the df header
-
-    df = pd.read_excel('assets/dostup.xlsx', sheet_name='Лист5', index_col=0)
+    df = pd.read_excel(r'passport/assets/dostup.xlsx', sheet_name='Лист5', index_col=0)
     df.drop('Номер отдела', axis=1, inplace=True)
 
     return df
@@ -383,8 +375,7 @@ def GetPeriodMonth(year, month):
     Функция принимает на вход номер месяца и год. Взоращает строку 'Месяц год'
     """
     months = ['', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь',
-              'Ноябрь',
-              'Декабрь']
+              'Ноябрь', 'Декабрь']
     period = ' '.join([str(months[month]), str(year)])
 
     return period
@@ -404,3 +395,49 @@ def GetMonths(start_month, start_year, finish_month, finish_year):
     start_period.reverse()
 
     return start_period
+
+
+def load_projects():
+    df = pd.read_sql("""select * from projects_test""", con=engine)
+    return df
+
+
+def load_data_site():
+    df = pd.read_excel(r'passport/assets/site.xlsx', skiprows=6)
+    df['Страница входа, ур. 4'] = df['Страница входа, ур. 4'].fillna('')
+    df2 = df[df['Страница входа, ур. 4'].str.contains('molodezhnyy-sovet')][['Страница входа, ур. 4', 'Визиты',
+                                                                             'Посетители', 'Просмотры',
+                                                                             'Доля новых посетителей']]
+    df2 = pd.DataFrame(df2.groupby(['Страница входа, ур. 4'], as_index=False)[['Визиты', 'Посетители', 'Просмотры',
+                                                                               'Доля новых посетителей']].sum())
+    df2 = df2.rename(columns={'Страница входа, ур. 4': 'Страница входа, ур. 2'})
+    df = pd.DataFrame(df.groupby(['Страница входа, ур. 2'], as_index=False)[
+                          ['Визиты', 'Посетители', 'Просмотры', 'Доля новых посетителей']].sum())
+    df.loc[13, 'Страница входа, ур. 2'] = 'https://mbufk.roskazna.gov.ru/'
+    df = df.append(df2).reset_index()
+    df.drop('index', axis=1, inplace=True)
+    df.loc[8, ['Визиты', 'Посетители', 'Просмотры', 'Доля новых посетителей']] = \
+        df.loc[8, ['Визиты', 'Посетители', 'Просмотры', 'Доля новых посетителей']] - \
+        df.loc[14, ['Визиты', 'Посетители', 'Просмотры', 'Доля новых посетителей']]
+
+    df2 = pd.read_excel(r'passport/assets/site.xlsx', sheet_name='перевод', header=None)
+    df['Название'] = ''
+    for num in range(len(df2)):
+        mask = df['Страница входа, ур. 2'].isin(df2.iloc[num])
+        df.loc[mask, 'Название'] = df2.iloc[num][1]
+    df3 = df[(df['Название'] == 'О Межрегиональном бухгалтерском УФК') | (df['Название'] == 'Новости') |
+             (df['Название'] == 'Документы') | (df['Название'] == 'Электронный бюджет') |
+             (df['Название'] == 'Иная деятельность') | (df['Название'] == 'Прием обращений')]
+    return df3
+
+
+def load_data_eb():
+    df = pd.read_excel(r'passport/assets/site.xlsx', skiprows=6)
+    df = df[df['Страница входа, ур. 2'] == 'https://mbufk.roskazna.gov.ru/elektronnyy-byudzhet/']
+    df_eb = df.groupby('Страница входа, ур. 3', as_index=False)['Глубина просмотра'].sum()
+    df4 = pd.read_excel(r'passport/assets/site.xlsx', sheet_name='перевод', skiprows=15, header=None)
+    df_eb['site_page'] = ''
+    for num in range(len(df4)):
+        mask = df_eb['Страница входа, ур. 3'].isin(df4.iloc[num])
+        df_eb.loc[mask, 'site_page'] = df4.iloc[num][1]
+    return df_eb
