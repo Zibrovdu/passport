@@ -3,11 +3,9 @@ from datetime import date, timedelta
 
 import pandas as pd
 from sqlalchemy import create_engine
-import passport.load_cfg as lc
+import mbu.load_cfg as lc
 
 engine = create_engine(f'{lc.db_dialect}://{lc.db_username}:{lc.db_password}@{lc.db_host}:{lc.db_port}/{lc.db_name}')
-
-print(engine)
 
 current_month = date.today().month
 current_day = date.today().day
@@ -282,7 +280,7 @@ def CountMeanTime(filtered_df):
 
 
 def LoadInfSystemsData():
-    df = pd.read_excel(r'passport/assets/dostup.xlsx', sheet_name='Лист5', index_col=0)
+    df = pd.read_excel(r'mbu/assets/dostup.xlsx', sheet_name='Лист5', index_col=0)
     df.drop('Номер отдела', axis=1, inplace=True)
 
     return df
@@ -403,7 +401,7 @@ def load_projects():
 
 
 def load_data_site():
-    df = pd.read_excel(r'passport/assets/site.xlsx', skiprows=6)
+    df = pd.read_excel(r'mbu/assets/site.xlsx', skiprows=6)
     df['Страница входа, ур. 4'] = df['Страница входа, ур. 4'].fillna('')
     df2 = df[df['Страница входа, ур. 4'].str.contains('molodezhnyy-sovet')][['Страница входа, ур. 4', 'Визиты',
                                                                              'Посетители', 'Просмотры',
@@ -420,7 +418,7 @@ def load_data_site():
         df.loc[8, ['Визиты', 'Посетители', 'Просмотры', 'Доля новых посетителей']] - \
         df.loc[14, ['Визиты', 'Посетители', 'Просмотры', 'Доля новых посетителей']]
 
-    df2 = pd.read_excel(r'passport/assets/site.xlsx', sheet_name='перевод', header=None)
+    df2 = pd.read_excel(r'mbu/assets/site.xlsx', sheet_name='перевод', header=None)
     df['Название'] = ''
     for num in range(len(df2)):
         mask = df['Страница входа, ур. 2'].isin(df2.iloc[num])
@@ -432,10 +430,10 @@ def load_data_site():
 
 
 def load_data_eb():
-    df = pd.read_excel(r'passport/assets/site.xlsx', skiprows=6)
+    df = pd.read_excel(r'mbu/assets/site.xlsx', skiprows=6)
     df = df[df['Страница входа, ур. 2'] == 'https://mbufk.roskazna.gov.ru/elektronnyy-byudzhet/']
     df_eb = df.groupby('Страница входа, ур. 3', as_index=False)['Глубина просмотра'].sum()
-    df4 = pd.read_excel(r'passport/assets/site.xlsx', sheet_name='перевод', skiprows=15, header=None)
+    df4 = pd.read_excel(r'mbu/assets/site.xlsx', sheet_name='перевод', skiprows=15, header=None)
     df_eb['site_page'] = ''
     for num in range(len(df4)):
         mask = df_eb['Страница входа, ур. 3'].isin(df4.iloc[num])

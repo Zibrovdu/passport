@@ -5,9 +5,9 @@ import datetime as dt
 import dash_table
 
 import dash_daq as daq
-import passport.load_data as ld
-import passport.site_info as si
-import passport.figures as pf
+import mbu.load_data as ld
+import mbu.site_info as si
+import mbu.figures as pf
 
 etsp_df = ld.LoadEtspData()
 etsp_top_user_df = ld.TopUser(etsp_df)

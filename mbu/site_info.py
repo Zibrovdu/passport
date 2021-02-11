@@ -1,7 +1,7 @@
 import requests
 import pandas as pd
-import passport.load_cfg as cfg
-import passport.log_writer as lw
+import mbu.load_cfg as cfg
+import mbu.log_writer as lw
 
 
 def get_site_info(start_date, end_date):

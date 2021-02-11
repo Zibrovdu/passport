@@ -1,7 +1,7 @@
 import configparser
 
 cfg_parser = configparser.ConfigParser()
-cfg_parser.read(r'passport/assets/settings.rkz')
+cfg_parser.read(r'mbu/assets/settings.rkz')
 
 token = cfg_parser['metrika']['token']
 

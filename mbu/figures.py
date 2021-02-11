@@ -1,6 +1,6 @@
 
 import plotly.graph_objects as go
-import passport.load_data as ld
+import mbu.load_data as ld
 
 site_top_df = ld.load_data_site()
 

@@ -1,6 +1,6 @@
 import dash
-from passport.layouts import layout
-from passport.callbacks import register_callbacks
+from mbu.layouts import layout
+from mbu.callbacks import register_callbacks
 
 
 app = dash.Dash(__name__, suppress_callback_exceptions=True, title='Отдел сопровождения пользователей')
